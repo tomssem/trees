@@ -1,5 +1,6 @@
 const canvasSketch = require("canvas-sketch");
 import {random} from "canvas-sketch-util"
+import math from "canvas-sketch-util/math";
 var _ = require("lodash");
 
 const settings = {
@@ -35,48 +36,76 @@ function reduce(funcAcross, funcAlong, accum, tree) {
     return funcAlong(accum, tree.pos);
   } else {
     const mapFunc = _.partial(reduce, funcAcross, funcAlong, accum);
-    console.log(tree.children.map(mapFunc));
     return funcAlong(tree.pos, funcAcross(tree.children.map(mapFunc)));
   }
-  console.log("Here?");
 }
 
 function depth(tree) {
+  if(tree === undefined) {
+    return 0;
+  }
   const ones = (pos) => 1;
   const plus = (a, b) => a + b;
-  console.log(map(ones, tree));
   return reduce(_.max, plus, 0, map(ones, tree));
 }
 
+const treeExpander = (tree) => {
+  const pos = [...tree.pos];
+  if(tree.children.length === 0) {
+    let children = [];
+    for(let i = 0; i < 4; ++i) {
+      const x = tree.pos[0] + random.range(1, 300);
+      const y = tree.pos[1] + random.range(1, 300);
+      children.push(new Tree([x, y]))
+    }
+    return new Tree(pos, children);
+  } else {
+    return new Tree(pos, tree.children.map(treeExpander));
+  }
+}
+
 class TreeGenerator {
-  constructor(startPos, depth, tree) {
+  constructor(startPos, maxDepth, tree) {
     this.startPos = startPos;
-    this.depth = depth;
+    this.maxDepth = maxDepth;
     this.tree = tree;
   }
 
   next() {
+    if(depth(this.tree) >= this.maxDepth) {
+      return {"done": true};
+    }
     if(this.tree === undefined) {
       this.tree = new Tree(this.startPos);
-      return this.tree;
+    } else {
+      this.tree = treeExpander(this.tree);
     }
+    
+    return {"value": this.tree, "done": false};
   }
 }
 
-const tree = new Tree([500, 500], [new Tree([400, 600], [new Tree([800, 900])]), new Tree([600, 600])]);
+const treeGen = new TreeGenerator([0, 0], 10);
+let genTree;
+
+let count = 0;
+
+while(true) {
+  const tmp = treeGen.next();
+  if(tmp.done) {
+    break;
+  }
+  genTree = tmp.value;
+};
 
 const sketch = () => {
   return ({ context, width, height }) => {
     context.fillStyle = "blue";
     context.strokeStyle = "white";
     context.fillRect(0, 0, width, height);
+    context.globalAlpha = 0.3
 
-    context.lineWidth = "6";
-    context.beginPath();
-    context.moveTo(100, 100);
-    context.lineTo(200, 200);
-    tree.draw(context);
-    console.log(depth(tree));
+    genTree.draw(context);
   };
 };
 
