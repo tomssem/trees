@@ -1,6 +1,7 @@
 const canvasSketch = require("canvas-sketch");
 import {random} from "canvas-sketch-util"
 import math from "canvas-sketch-util/math";
+import { create } from "lodash";
 var _ = require("lodash");
 
 const settings = {
@@ -49,26 +50,42 @@ function depth(tree) {
   return reduce(_.max, plus, 0, map(ones, tree));
 }
 
-const treeExpander = (tree) => {
+const createConstNum = (num) => {
+  return ((_) => num);
+}
+
+const createRadialDensity = (std) => {
+  return (tree) => {
+      const xRand = tree.pos[0] - 540;
+      const yRand = tree.pos[1] - 540;
+      const x = tree.pos[0] + random.gaussian(xRand, 5);
+      const y = tree.pos[1] + random.gaussian(yRand, 5);
+      return [x, y];
+  }
+}
+
+const treeExpander = (numChildrenGenerator, positionDensity, tree) => {
   const pos = [...tree.pos];
   if(tree.children.length === 0) {
+    const numChildren = numChildrenGenerator(tree);
     let children = [];
-    for(let i = 0; i < 4; ++i) {
-      const x = tree.pos[0] + random.range(1, 300);
-      const y = tree.pos[1] + random.range(1, 300);
-      children.push(new Tree([x, y]))
+    for(let i = 0; i < numChildren; ++i) {
+      children.push(new Tree(positionDensity(tree)));
     }
     return new Tree(pos, children);
   } else {
-    return new Tree(pos, tree.children.map(treeExpander));
+    const mapFunc = _.partial(treeExpander, numChildrenGenerator, positionDensity);
+    return new Tree(pos, tree.children.map(mapFunc));
   }
 }
 
 class TreeGenerator {
-  constructor(startPos, maxDepth, tree) {
+  constructor(startPos, maxDepth, numChildrenGenerator, positionDensity) {
     this.startPos = startPos;
     this.maxDepth = maxDepth;
-    this.tree = tree;
+    this.numChildrenGenerator = numChildrenGenerator;
+    this.positionDensity = positionDensity;
+    this.tree = undefined;
   }
 
   next() {
@@ -78,14 +95,14 @@ class TreeGenerator {
     if(this.tree === undefined) {
       this.tree = new Tree(this.startPos);
     } else {
-      this.tree = treeExpander(this.tree);
+      this.tree = treeExpander(this.numChildrenGenerator, this.positionDensity, this.tree);
     }
     
     return {"value": this.tree, "done": false};
   }
 }
 
-const treeGen = new TreeGenerator([0, 0], 10);
+const treeGen = new TreeGenerator([540, 540], 8, createConstNum(4), createRadialDensity(100));
 let genTree;
 
 let count = 0;
