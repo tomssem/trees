@@ -8,12 +8,39 @@ const settings = {
   dimensions: [ 1080, 1080 ]
 };
 
-const drawTree = (context, tree) => {
-  context.lineTo(...tree.pos);
-  context.stroke();
-  tree.children.forEach(element => {
+const standardConnectionDraw = (context, start, end) => {
+    context.globalAlpha = 0.9;
+    context.filter = "blur(1px)";
+    context.strokeStyle = "white";
+    context.lineWidth = "1";
     context.beginPath();
-    context.moveTo(...tree.pos);
+    context.moveTo(...start.pos);
+    context.lineTo(...end.pos);
+    context.stroke();
+};
+
+const standardNodeDraw = (context, tree) => {
+    context.globalAlpha = 0.9;
+    context.filter = "blur(1px)";
+    context.strokeStyle = "white";
+    context.lineWidth = "1";
+    context.beginPath();
+    context.arc(...tree.pos, 5, 0, 2 * Math.PI);
+    context.stroke();
+};
+
+const noOp = () => {};
+
+const drawTree = (context, tree, nodeDraw, connectionDraw) => {
+  if(nodeDraw === undefined) {
+    nodeDraw = standardNodeDraw;
+  }
+  if(connectionDraw === undefined) {
+    connectionDraw = standardConnectionDraw;
+  }
+  nodeDraw(context, tree);
+  tree.children.forEach(element => {
+    connectionDraw(context, tree, element);
     drawTree(context, element);
   });
 }
@@ -102,7 +129,7 @@ class TreeGenerator {
   }
 }
 
-const treeGen = new TreeGenerator(4, createConstNum(6), createRadialDensity(200));
+const treeGen = new TreeGenerator(4, createConstNum(10), createRadialDensity(20));
 let genTree;
 
 let count = 0;
@@ -117,12 +144,8 @@ while(true) {
 
 const sketch = () => {
   return ({ context, width, height }) => {
-    context.filter = "blur(1px)";
     context.fillStyle = "blue";
-    context.strokeStyle = "white";
-    context.lineWidth = "1";
     context.fillRect(0, 0, width, height);
-    context.globalAlpha = 0.9;
 
     context.save();
     context.translate(540, 540);
