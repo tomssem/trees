@@ -22,6 +22,20 @@ const randomFillColour = (nodeDrawer) => {
   }
 }
 
+const depthDependentConnectionDraw = (context, start, end) => {
+  const width = depth(start)**2;
+  context.save();
+
+  context.lineWidth = width;
+
+  context.beginPath();
+  context.moveTo(...start.pos);
+  context.lineTo(...end.pos);
+  context.stroke();
+
+  context.restore();
+}
+
 const standardConnectionDraw = (context, start, end) => {
   context.beginPath();
   context.moveTo(...start.pos);
@@ -29,8 +43,11 @@ const standardConnectionDraw = (context, start, end) => {
   context.stroke();
 };
 
-const depthDependentNodeDraw = (context, tree) => {
-  const radius = depth(tree)**4;
+const depthDependentNodeDraw = (context, tree, factor) => {
+  if(factor === undefined) {
+    factor = 4;
+  }
+  const radius = depth(tree)**factor;
   context.beginPath();
   context.arc(...tree.pos, radius, 0, 2 * Math.PI);
   context.fill();
@@ -146,7 +163,43 @@ class TreeGenerator {
   }
 }
 
-const treeGen = new TreeGenerator(10, createRandomRange(2, 5), createRadialDensity(40));
+const verticalShiftFilter = (context, amount, frequency, width, height) => {
+  for(let i = 0; i < width; ++i) {
+    const offset = Math.floor(random.noise2D(i, 0, frequency) * amount);
+    const copySlice = context.getImageData(i, 0, 1, height);
+    context.putImageData(copySlice, i, offset);
+  }
+}
+
+const horizontalShiftFilter = (context, amount, frequency, width, height) => {
+  for(let i = 0; i < height; ++i) {
+    const offset = Math.floor(random.noise2D(0, i, frequency) * amount);
+    const copySlice = context.getImageData(0, i, width, 1);
+    context.putImageData(copySlice, offset, i);
+  }
+}
+
+const repeatShiftFilter = (context, amount, frequency, width, height, times) => {
+  for(let i = 0; i < times; ++i) {
+      verticalShiftFilter(context, amount, frequency, width, height);
+      horizontalShiftFilter(context, amount, frequency, width, height);
+  }
+}
+
+const randomRepeatShiftFilter = (context, amount, frequency, width, height, times) => {
+  for(let i = 0; i < times; ++i) {
+    if(Math.random() < 0.5) {
+      console.log("1");
+      verticalShiftFilter(context, amount, frequency, width, height);
+      horizontalShiftFilter(context, amount, frequency, width, height);
+    } else {
+      console.log("2");
+      horizontalShiftFilter(context, amount, frequency, width, height);
+      verticalShiftFilter(context, amount, frequency, width, height);
+    }
+  }
+}
+const treeGen = new TreeGenerator(9, createConstNum(4), createRadialDensity(50));
 let genTree;
 
 let count = 0;
@@ -159,27 +212,10 @@ while(true) {
   genTree = tmp.value;
 };
 
-const randomFilter = (context, amount, width, height) => {
-  const copyCanvas = document.createElement("canvas");
-
-  var copyContext, imageData;
-
-  copyContext = copyCanvas.getContext('2d');
-
-  imageData = context.getImageData(0, 0, width, height);
-
-  copyContext.putImageData(imageData, 0, 0);
-
-  for(let i = 0; i < width; ++i) {
-    const offset = Math.floor(random.noise1D(i, 0.01) * amount);
-    const copySlice = context.getImageData(i, 0, 1, height);
-    context.putImageData(copySlice, i, offset);
-  }
-}
 
 const sketch = () => {
   return ({ context, width, height }) => {
-    context.fillStyle = "slateBlue";
+    context.fillStyle = "ivory";
     context.fillRect(0, 0, width, height);
 
     context.save();
@@ -188,8 +224,8 @@ const sketch = () => {
     context.strokeStyle = "gold";
     context.fillStyle = "gold";
     context.translate(width / 2, height / 2);
-    drawTree(context, genTree, noOp, standardConnectionDraw);
-    randomFilter(context, 80, width, height);
+    drawTree(context, genTree, randomFillColour(depthDependentNodeDraw), depthDependentConnectionDraw);
+    repeatShiftFilter(context, 5, 0.1, width, height, 40);
     context.restore();
   };
 };
