@@ -8,6 +8,16 @@ const settings = {
   dimensions: [ 1080, 1080 ]
 };
 
+const drawTree = (context, tree) => {
+  context.lineTo(...tree.pos);
+  context.stroke();
+  tree.children.forEach(element => {
+    context.beginPath();
+    context.moveTo(...tree.pos);
+    drawTree(context, element);
+  });
+}
+
 class Tree {
   constructor(pos, children) {
     this.pos = pos;
@@ -15,16 +25,6 @@ class Tree {
       children = [];
     }
     this.children = children;
-  }
-
-  draw(context) {
-    context.lineTo(...this.pos);
-    context.stroke();
-    this.children.forEach(element => {
-      context.beginPath();
-      context.moveTo(...this.pos);
-      element.draw(context);
-    });
   }
 }
 
@@ -126,7 +126,7 @@ const sketch = () => {
 
     context.save();
     context.translate(540, 540);
-    genTree.draw(context);
+    drawTree(context, genTree);
     context.restore();
   };
 };
