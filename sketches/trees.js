@@ -8,10 +8,20 @@ const settings = {
   dimensions: [ 1080, 1080 ]
 };
 
-const standardConnectionDraw = (context, start, end) => {
-    context.globalAlpha = 0.9;
+const depthDependentConnectionDraw = (context, start, end) => {
     context.filter = "blur(1px)";
-    context.strokeStyle = "white";
+    context.strokeStyle = "gold";
+    context.fillStyle = "gold";
+    context.lineWidth = `${depth(start)**1.5}`;
+    context.beginPath();
+    context.moveTo(...start.pos);
+    context.lineTo(...end.pos);
+    context.stroke();
+};
+
+const standardConnectionDraw = (context, start, end) => {
+    context.filter = "blur(1px)";
+    context.strokeStyle = "gold";
     context.lineWidth = "1";
     context.beginPath();
     context.moveTo(...start.pos);
@@ -19,14 +29,25 @@ const standardConnectionDraw = (context, start, end) => {
     context.stroke();
 };
 
-const standardNodeDraw = (context, tree) => {
-    context.globalAlpha = 0.9;
+const depthDependentNodeDraw = (context, tree) => {
     context.filter = "blur(1px)";
-    context.strokeStyle = "white";
+    context.strokeStyle = "gold";
+    context.fillStyle = "gold";
+    context.lineWidth = "1";
+    const radius = depth(tree)**1.5;
+    context.beginPath();
+    context.arc(...tree.pos, radius, 0, 2 * Math.PI);
+    context.fill();
+}
+
+const standardNodeDraw = (context, tree) => {
+    context.filter = "blur(1px)";
+    context.strokeStyle = "gold";
+    context.fillStyle = "gold";
     context.lineWidth = "1";
     context.beginPath();
     context.arc(...tree.pos, 5, 0, 2 * Math.PI);
-    context.stroke();
+    context.fill();
 };
 
 const noOp = () => {};
@@ -41,7 +62,7 @@ const drawTree = (context, tree, nodeDraw, connectionDraw) => {
   nodeDraw(context, tree);
   tree.children.forEach(element => {
     connectionDraw(context, tree, element);
-    drawTree(context, element);
+    drawTree(context, element, nodeDraw, connectionDraw);
   });
 }
 
@@ -79,6 +100,10 @@ function depth(tree) {
 
 const createConstNum = (num) => {
   return ((_) => num);
+}
+
+const createRandomRange = (from, to) => {
+  return (_) => random.rangeFloor(from, to);
 }
 
 const createRadialDensity = (std) => {
@@ -129,7 +154,7 @@ class TreeGenerator {
   }
 }
 
-const treeGen = new TreeGenerator(4, createConstNum(10), createRadialDensity(20));
+const treeGen = new TreeGenerator(7, createRandomRange(4, 5), createRadialDensity(20));
 let genTree;
 
 let count = 0;
@@ -149,7 +174,7 @@ const sketch = () => {
 
     context.save();
     context.translate(540, 540);
-    drawTree(context, genTree);
+    drawTree(context, genTree, depthDependentNodeDraw, noOp);
     context.restore();
   };
 };
