@@ -8,46 +8,31 @@ const settings = {
   dimensions: [ 1080, 1080 ]
 };
 
-const depthDependentConnectionDraw = (context, start, end) => {
-    context.filter = "blur(1px)";
-    context.strokeStyle = "gold";
-    context.fillStyle = "gold";
-    context.lineWidth = `${depth(start)**1.5}`;
-    context.beginPath();
-    context.moveTo(...start.pos);
-    context.lineTo(...end.pos);
-    context.stroke();
+const standardConnectionDraw = (context, start, end) => {
+  context.beginPath();
+  context.moveTo(...start.pos);
+  context.lineTo(...end.pos);
+  context.stroke();
 };
 
-const standardConnectionDraw = (context, start, end) => {
-    context.filter = "blur(1px)";
-    context.strokeStyle = "gold";
-    context.lineWidth = "1";
-    context.beginPath();
-    context.moveTo(...start.pos);
-    context.lineTo(...end.pos);
-    context.stroke();
-};
+const depthDependentColourNodeDraw = (context, tree) => {
+  const radius = depth(tree)**1.5;
+  context.beginPath();
+  context.arc(...tree.pos, radius, 0, 2 * Math.PI);
+  context.fill();
+}
 
 const depthDependentNodeDraw = (context, tree) => {
-    context.filter = "blur(1px)";
-    context.strokeStyle = "gold";
-    context.fillStyle = "gold";
-    context.lineWidth = "1";
-    const radius = depth(tree)**1.5;
-    context.beginPath();
-    context.arc(...tree.pos, radius, 0, 2 * Math.PI);
-    context.fill();
+  const radius = depth(tree)**1.5;
+  context.beginPath();
+  context.arc(...tree.pos, radius, 0, 2 * Math.PI);
+  context.fill();
 }
 
 const standardNodeDraw = (context, tree) => {
-    context.filter = "blur(1px)";
-    context.strokeStyle = "gold";
-    context.fillStyle = "gold";
-    context.lineWidth = "1";
-    context.beginPath();
-    context.arc(...tree.pos, 5, 0, 2 * Math.PI);
-    context.fill();
+  context.beginPath();
+  context.arc(...tree.pos, 5, 0, 2 * Math.PI);
+  context.fill();
 };
 
 const noOp = () => {};
@@ -154,7 +139,7 @@ class TreeGenerator {
   }
 }
 
-const treeGen = new TreeGenerator(7, createRandomRange(4, 5), createRadialDensity(20));
+const treeGen = new TreeGenerator(6, createRandomRange(5, 7), createRadialDensity(50));
 let genTree;
 
 let count = 0;
@@ -173,7 +158,11 @@ const sketch = () => {
     context.fillRect(0, 0, width, height);
 
     context.save();
+    // context.filter = "blur(1px)";
+    context.strokeStyle = "gold";
+    context.fillStyle = "gold";
     context.translate(540, 540);
+    context.treeDepth = depth(genTree);
     drawTree(context, genTree, depthDependentNodeDraw, noOp);
     context.restore();
   };
