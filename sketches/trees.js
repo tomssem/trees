@@ -56,10 +56,10 @@ const createConstNum = (num) => {
 
 const createRadialDensity = (std) => {
   return (tree) => {
-      const xRand = tree.pos[0] - 540;
-      const yRand = tree.pos[1] - 540;
-      const x = tree.pos[0] + random.gaussian(xRand, 5);
-      const y = tree.pos[1] + random.gaussian(yRand, 5);
+      const xRand = tree.pos[0];
+      const yRand = tree.pos[1];
+      const x = tree.pos[0] + random.gaussian(xRand, std);
+      const y = tree.pos[1] + random.gaussian(yRand, std);
       return [x, y];
   }
 }
@@ -80,8 +80,8 @@ const treeExpander = (numChildrenGenerator, positionDensity, tree) => {
 }
 
 class TreeGenerator {
-  constructor(startPos, maxDepth, numChildrenGenerator, positionDensity) {
-    this.startPos = startPos;
+  constructor(maxDepth, numChildrenGenerator, positionDensity) {
+    this.startPos = [0, 0];
     this.maxDepth = maxDepth;
     this.numChildrenGenerator = numChildrenGenerator;
     this.positionDensity = positionDensity;
@@ -102,7 +102,7 @@ class TreeGenerator {
   }
 }
 
-const treeGen = new TreeGenerator([540, 540], 8, createConstNum(4), createRadialDensity(100));
+const treeGen = new TreeGenerator(4, createConstNum(6), createRadialDensity(200));
 let genTree;
 
 let count = 0;
@@ -117,12 +117,17 @@ while(true) {
 
 const sketch = () => {
   return ({ context, width, height }) => {
+    context.filter = "blur(1px)";
     context.fillStyle = "blue";
     context.strokeStyle = "white";
+    context.lineWidth = "1";
     context.fillRect(0, 0, width, height);
-    context.globalAlpha = 0.3
+    context.globalAlpha = 0.9;
 
+    context.save();
+    context.translate(540, 540);
     genTree.draw(context);
+    context.restore();
   };
 };
 
