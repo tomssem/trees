@@ -11,10 +11,10 @@ const cyberColours = ["aqua", "blue", "violet", "coral", "cyan", "darkblue", "cr
                       "steelblue", "violet"]
 
 const lightningBackgroundColours = ["violet", "darkblue", "crimson", "darkmagenta", "darkviolet",
-"darkturquoise", "deepksyblue", "indigo", "midnightblue", "orangered", "purple", "steelblue", "violet"];
+"deepksyblue", "indigo", "midnightblue", "orangered", "purple", "violet"];
 
 const settings = {
-  dimensions: [ 2160, 2160 ]
+  dimensions: [ 1080, 1080 ]
 };
 
 const randomBackgroundColour = (nodeDrawer) => {
@@ -45,7 +45,7 @@ const randomFillColour = (nodeDrawer) => {
   return (context, tree) => {
     context.save();
     const r = random.rangeFloor(0, 256);
-    const g = random.rangeFloor(0, 256);
+    const g = random.rangeFloor(0, 10);
     const b = random.rangeFloor(0, 256);
     context.fillStyle = `rgb(${r},${g},${b})`;
 
@@ -69,6 +69,41 @@ const depthDependentConnectionDraw = (context, start, end) => {
   context.restore();
 }
 
+const calculateOrthonormalVector = (v) => {
+  const orth = [-v[1], v[0]];
+  const magnitude = Math.sqrt(_.sum(orth.map((el) => el**2)));
+
+  return orth.map((el) => el / magnitude);
+}
+
+const depthDendentJoinedConnectionDraw = (context, start, end) => {
+  const startDepth = depth(start);
+  const endDepth = startDepth - 1;
+  const startWidth = startDepth**2;
+  const endWidth = endDepth**2;
+
+  const endOrthoNormal = calculateOrthonormalVector(end.pos);
+  let beginOrthoNormal;
+  if(_.isEqual(start.pos, [0, 0])) {
+    console.log("here");
+    beginOrthoNormal = endOrthoNormal;
+  } else {
+    beginOrthoNormal = calculateOrthonormalVector(start.pos);
+  }
+
+  context.beginPath();
+  context.moveTo(start.pos[0] + startWidth * beginOrthoNormal[0],
+                 start.pos[1] + startWidth * beginOrthoNormal[1]);
+  context.lineTo(start.pos[0] - startWidth * beginOrthoNormal[0],
+                 start.pos[1] - startWidth * beginOrthoNormal[1]);
+  context.lineTo(end.pos[0] - endWidth * endOrthoNormal[0],
+                 end.pos[1] - endWidth * endOrthoNormal[1]);
+  context.lineTo(end.pos[0] + endWidth * endOrthoNormal[0],
+                 end.pos[1] + endWidth * endOrthoNormal[1]);
+  context.closePath();
+  context.fill();
+}
+
 const standardConnectionDraw = (context, start, end) => {
   context.beginPath();
   context.moveTo(...start.pos);
@@ -78,7 +113,7 @@ const standardConnectionDraw = (context, start, end) => {
 
 const depthDependentNodeDraw = (context, tree, factor) => {
   if(factor === undefined) {
-    factor = 4;
+    factor = 3.5;
   }
   const radius = depth(tree)**factor;
   context.beginPath();
@@ -191,6 +226,8 @@ class TreeGenerator {
     } else {
       this.tree = treeExpander(this.numChildrenGenerator, this.positionDensity, this.tree);
     }
+
+    console.log(this.tree);
     
     return {"value": this.tree, "done": false};
   }
@@ -222,17 +259,15 @@ const repeatShiftFilter = (context, amount, frequency, width, height, times) => 
 const randomRepeatShiftFilter = (context, amount, frequency, width, height, times) => {
   for(let i = 0; i < times; ++i) {
     if(Math.random() < 0.5) {
-      console.log("1");
       verticalShiftFilter(context, amount, frequency, width, height);
       horizontalShiftFilter(context, amount, frequency, width, height);
     } else {
-      console.log("2");
       horizontalShiftFilter(context, amount, frequency, width, height);
       verticalShiftFilter(context, amount, frequency, width, height);
     }
   }
 }
-const treeGen = new TreeGenerator(6, createConstNum(4), createRadialDensity(100));
+const treeGen = new TreeGenerator(6, createConstNum(5), createRadialDensity(100));
 let genTree;
 
 let count = 0;
@@ -245,6 +280,17 @@ while(true) {
   genTree = tmp.value;
 };
 
+const lightningGen = new TreeGenerator(4, createConstNum(5), createRadialDensity(100));
+
+let lightning;
+
+while(true) {
+  const tmp = lightningGen.next();
+  if(tmp.done) {
+    break;
+  }
+  lightning = tmp.value;
+};
 
 const sketch = () => {
   return ({ context, width, height }) => {
@@ -254,11 +300,38 @@ const sketch = () => {
     context.save();
     context.globalAlpha = 1;
     // context.filter = "blur(1px)";
-    context.strokeStyle = "darkorange";
-    context.fillStyle = "darkorange";
+    context.strokeStyle = "gold";
+    context.fillStyle = "gold";
     context.translate(width / 2, height / 2);
-    drawTree(context, genTree, randomBackgroundColour(depthDependentNodeDraw), noOp);
-    randomRepeatShiftFilter(context, 50, 0.04, width, height, 150);
+    drawTree(context, genTree, randomFillColour(depthDependentNodeDraw), standardConnectionDraw);
+    randomRepeatShiftFilter(context, 50, 0.2, width, height, 8);
+
+    const randomTree = (tree, std) => map((pos) => [pos[0] + random.gaussian(0, std), pos[1] + random.gaussian(0, std)], tree);
+
+    context.fillStyle = "whiteSmoke";
+    context.filter = "blur(0.4px)";
+    drawTree(context, lightning, noOp, depthDendentJoinedConnectionDraw);
+
+    context.strokeStyle = "cyan";
+    context.lineStyle = 2;
+    context.filter = "blur(9px)";
+    drawTree(context, randomTree(lightning, 5), noOp, standardConnectionDraw);
+
+    context.strokeStyle = "lime";
+    context.lineStyle = 3;
+    context.filter = "blur(9px)";
+    drawTree(context, randomTree(lightning, 5), noOp, standardConnectionDraw);
+
+    context.strokeStyle = "skyblue";
+    context.lineStyle = 4;
+    context.filter = "blur(11px)";
+    drawTree(context, randomTree(lightning, 10), noOp, standardConnectionDraw);
+
+    context.strokeStyle = "crimson";
+    context.lineStyle = 5;
+    context.filter = "blur(12px)";
+    drawTree(context, randomTree(lightning, 10), noOp, standardConnectionDraw);
+ 
     context.restore();
   };
 };
