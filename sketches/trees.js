@@ -4,9 +4,42 @@ import math from "canvas-sketch-util/math";
 import { create } from "lodash";
 var _ = require("lodash");
 
+const cyberColours = ["aqua", "blue", "violet", "coral", "cyan", "darkblue", "crimson",
+                      "darkmagenta", "darkorange", "darkorchid", "darkvuilet", "deeppink",
+                      "darkturquoise", "deepksyblue", "dogerblue", "goldenrod", "greenyellow", "indigo",
+                      "magenta", "mediumturquise", "midnightblue", "orange", "orangered", "purple", "red",
+                      "steelblue", "violet"]
+
+const lightningBackgroundColours = ["violet", "darkblue", "crimson", "darkmagenta", "darkviolet",
+"darkturquoise", "deepksyblue", "indigo", "midnightblue", "orangered", "purple", "steelblue", "violet"];
+
 const settings = {
-  dimensions: [ 1080, 1080 ]
+  dimensions: [ 2160, 2160 ]
 };
+
+const randomBackgroundColour = (nodeDrawer) => {
+  return (context, tree) => {
+    context.save();
+    context.fillStyle = random.pick(lightningBackgroundColours);
+
+    nodeDrawer(context, tree);
+
+    context.restore();
+  }
+
+}
+
+const randomCyberFillColour = (nodeDrawer) => {
+  return (context, tree) => {
+    context.save();
+    context.fillStyle = random.pick(cyberColours);
+
+    nodeDrawer(context, tree);
+
+    context.restore();
+  }
+
+}
 
 const randomFillColour = (nodeDrawer) => {
   return (context, tree) => {
@@ -199,7 +232,7 @@ const randomRepeatShiftFilter = (context, amount, frequency, width, height, time
     }
   }
 }
-const treeGen = new TreeGenerator(5, createConstNum(4), createRadialDensity(50));
+const treeGen = new TreeGenerator(6, createConstNum(4), createRadialDensity(100));
 let genTree;
 
 let count = 0;
@@ -215,17 +248,17 @@ while(true) {
 
 const sketch = () => {
   return ({ context, width, height }) => {
-    context.fillStyle = "black";
+    context.fillStyle = "darkmagenta";
     context.fillRect(0, 0, width, height);
 
     context.save();
     context.globalAlpha = 1;
     // context.filter = "blur(1px)";
-    context.strokeStyle = "gold";
-    context.fillStyle = "gold";
+    context.strokeStyle = "darkorange";
+    context.fillStyle = "darkorange";
     context.translate(width / 2, height / 2);
-    drawTree(context, genTree, randomFillColour(depthDependentNodeDraw), depthDependentConnectionDraw);
-    randomRepeatShiftFilter(context, 1, 0.1, width, height, 200);
+    drawTree(context, genTree, randomBackgroundColour(depthDependentNodeDraw), noOp);
+    randomRepeatShiftFilter(context, 50, 0.04, width, height, 150);
     context.restore();
   };
 };
