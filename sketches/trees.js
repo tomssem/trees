@@ -85,7 +85,6 @@ const depthDendentJoinedConnectionDraw = (context, start, end) => {
   const endOrthoNormal = calculateOrthonormalVector(end.pos);
   let beginOrthoNormal;
   if(_.isEqual(start.pos, [0, 0])) {
-    console.log("here");
     beginOrthoNormal = endOrthoNormal;
   } else {
     beginOrthoNormal = calculateOrthonormalVector(start.pos);
@@ -227,8 +226,6 @@ class TreeGenerator {
       this.tree = treeExpander(this.numChildrenGenerator, this.positionDensity, this.tree);
     }
 
-    console.log(this.tree);
-    
     return {"value": this.tree, "done": false};
   }
 }
@@ -267,6 +264,41 @@ const randomRepeatShiftFilter = (context, amount, frequency, width, height, time
     }
   }
 }
+
+const myBlur = (context, radius, width, height) => {
+  const copyContext = context.getImageData(0, 0, width, height);
+  const numCells = (radius * 2)**2;
+
+  const image = context.createImageData(1, 1);
+  const data = image.data;
+  console.log(data);
+
+  for(let i = 0; i < width; ++i) {
+    for(let j = 0; j < height; ++j) {
+      const cell = context.getImageData(i, j, radius * 2, radius * 2);
+      const cellData = cell.data;
+      let sumR = 0;
+      let sumG = 0;
+      let sumB = 0;
+      let sumA = 0;
+      for(let k = 0; k < numCells; ++k) {        
+        const idx = k * 4;
+        sumR += cellData[idx];
+        sumG += cellData[idx + 1];
+        sumB += cellData[idx + 2];
+        sumA += cellData[idx + 3];
+      }
+
+      data[0] = sumR / numCells;
+      data[1] = sumG / numCells;
+      data[2] = sumB / numCells;
+      data[3] = sumA / numCells;
+
+      context.putImageData(image, i, j);
+    }
+  }
+}
+
 const treeGen = new TreeGenerator(6, createConstNum(5), createRadialDensity(100));
 let genTree;
 
@@ -280,7 +312,7 @@ while(true) {
   genTree = tmp.value;
 };
 
-const lightningGen = new TreeGenerator(4, createConstNum(5), createRadialDensity(100));
+const lightningGen = new TreeGenerator(4, createRandomRange(3, 6), createRadialDensity(80));
 
 let lightning;
 
@@ -304,11 +336,14 @@ const sketch = () => {
     context.fillStyle = "gold";
     context.translate(width / 2, height / 2);
     drawTree(context, genTree, randomFillColour(depthDependentNodeDraw), standardConnectionDraw);
-    randomRepeatShiftFilter(context, 50, 0.2, width, height, 8);
+    // context.filter = "blur(4.4px)";
+    randomRepeatShiftFilter(context, 50, 0.2, width, height, 20);
+
+    myBlur(context, 5, width, height);
 
     const randomTree = (tree, std) => map((pos) => [pos[0] + random.gaussian(0, std), pos[1] + random.gaussian(0, std)], tree);
 
-    context.fillStyle = "whiteSmoke";
+    context.fillStyle = "black";
     context.filter = "blur(0.4px)";
     drawTree(context, lightning, noOp, depthDendentJoinedConnectionDraw);
 
