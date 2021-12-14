@@ -199,7 +199,7 @@ const randomRepeatShiftFilter = (context, amount, frequency, width, height, time
     }
   }
 }
-const treeGen = new TreeGenerator(9, createConstNum(4), createRadialDensity(50));
+const treeGen = new TreeGenerator(5, createConstNum(4), createRadialDensity(50));
 let genTree;
 
 let count = 0;
@@ -215,17 +215,17 @@ while(true) {
 
 const sketch = () => {
   return ({ context, width, height }) => {
-    context.fillStyle = "ivory";
+    context.fillStyle = "black";
     context.fillRect(0, 0, width, height);
 
     context.save();
-    context.globalAlpha = 0.3;
+    context.globalAlpha = 1;
     // context.filter = "blur(1px)";
     context.strokeStyle = "gold";
     context.fillStyle = "gold";
     context.translate(width / 2, height / 2);
     drawTree(context, genTree, randomFillColour(depthDependentNodeDraw), depthDependentConnectionDraw);
-    repeatShiftFilter(context, 5, 0.1, width, height, 40);
+    randomRepeatShiftFilter(context, 1, 0.1, width, height, 200);
     context.restore();
   };
 };
